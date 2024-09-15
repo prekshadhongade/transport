@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Interface</title>
+    <link rel="stylesheet" href="/public/booking1.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+    <style>
+        #map {
+            height: 450px;
+            width: 100%;
+        }
+        .marker-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .pickup-icon {
+            background-color: red;
+        }
+        .dropoff-icon {
+            background-color: blue;
+        }
+        #direction-type {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>BOOKING INTERFACE</h1>
+    <nav>
+        <ul>
+            <li><a href="/main.html">Back to Main</a></li>
+            <li><a href="#on-demand-transit">On-Demand Transit</a></li>
+            <li><a href="#contact-us">Contact Us</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section id="on-demand-transit">
+        <h2>On-Demand Transit</h2>
+        <div>
+            <h3>Ride Booking Interface</h3>
+            <form id="ride-form">
+                <label for="pickup">Pickup Location:</label>
+                <input type="text" id="pickup" name="pickup" required>
+                <button type="button" id="set-current-location">Use Current Location</button><br>
+                <label for="dropoff">Dropoff Location:</label>
+                <input type="text" id="dropoff" name="dropoff" required><br>
+                <label for="eco-friendly">Eco-Friendly Vehicle:</label>
+                <input type="checkbox" id="eco-friendly" name="eco-friendly"><br>
+                <label for="direction-type">Direction Type:</label>
+                <select id="direction-type">
+                    <option value="shortest">Shortest Route</option>
+                    <option value="fastest">Fastest Route</option>
+                </select><br>
+                <input type="submit" value="Request Ride">
+            </form>
+        </div>
+        <div>
+            <h3>Live Updates</h3>
+            <img src="" alt="Live Updates">
+            <p>Get real-time information on expected arrival times, ride costs, and ride-sharing options.</p>
+            <div class="update">
+                <strong>Update:</strong> Your ride is arriving in __ minutes. Estimated cost: for bike Rs.__.
+            </div>
+        </div>
+        <div>
+            <h3>Live Location</h3>
+            <div id="map"></div>
+        </div>
+    </section>
+
+    <section id="contact-us">
+        <h2>Contact Us</h2>
+        <div>
+            <h3>Support Form</h3>
+            <img src="https://via.placeholder.com/1200x400?text=Contact+Support" alt="Contact Support">
+            <form action="/submit-support" method="post">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required><br>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required><br>
+                <label for="message">Message:</label><br>
+                <textarea id="message" name="message" rows="4" required></textarea><br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2024 AutoNav. All rights reserved.</p>
+</footer>
+
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Leaflet Routing Machine JavaScript -->
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    let map, currentMarker, pickupMarker, dropoffMarker, routeControl;
+    let currentLocation = null;
+
+    // Initialize the map
+    function initMap() {
+        map = L.map('map').setView([17.385044, 78.385230], 13); // Default view
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Handle geolocation
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(onLocationFound, onLocationError);
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    }
+
+    // Function to handle the success of the geolocation
+    function onLocationFound(e) {
+        const { latitude, longitude } = e.coords;
+        currentLocation = [latitude, longitude];
+
+        // Add a marker for the current location
+        if (currentMarker) {
+            map.removeLayer(currentMarker);
+        }
+        currentMarker = L.marker([latitude, longitude], {
+            icon: L.divIcon({ className: 'marker-icon pickup-icon' })
+        }).addTo(map)
+            .bindPopup('You are here.')
+            .openPopup();
+
+        // Center the map on the current location
+        map.setView([latitude, longitude], 13);
+
+        // Save the current location as the pickup location by default
+        document.getElementById('pickup').value = `${latitude}, ${longitude}`;
+    }
+
+    // Function to handle errors in geolocation
+    function onLocationError(e) {
+        alert(e.message);
+    }
+
+    // Handle form submission
+    document.getElementById('ride-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const pickupLocation = document.getElementById('pickup').value;
+        const dropoffLocation = document.getElementById('dropoff').value;
+        const directionType = document.getElementById('direction-type').value;
+
+        geocodeLocation(pickupLocation, function(pickupLatLng) {
+            if (pickupMarker) {
+                map.removeLayer(pickupMarker);
+            }
+            pickupMarker = L.marker(pickupLatLng, {
+                icon: L.divIcon({ className: 'marker-icon pickup-icon' })
+            }).addTo(map)
+                .bindPopup('Pickup Location')
+                .openPopup();
+
+            // Center map on pickup location
+            map.setView(pickupLatLng, 13);
+
+            // Add route
+            if (dropoffMarker) {
+                map.removeLayer(dropoffMarker);
+            }
+            geocodeLocation(dropoffLocation, function(dropoffLatLng) {
+                if (dropoffMarker) {
+                    map.removeLayer(dropoffMarker);
+                }
+                dropoffMarker = L.marker(dropoffLatLng, {
+                    icon: L.divIcon({ className: 'marker-icon dropoff-icon' })
+                }).addTo(map)
+                    .bindPopup('Dropoff Location')
+                    .openPopup();
+
+                // Center map on pickup location
+                map.setView(pickupLatLng, 13);
+
+                // Add route
+                if (routeControl) {
+                    map.removeControl(routeControl);
+                }
+                routeControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(pickupLatLng[0], pickupLatLng[1]),
+                        L.latLng(dropoffLatLng[0], dropoffLatLng[1])
+                    ],
+                    routeWhileDragging: true,
+                    router: L.Routing.osrmv1({
+                        serviceUrl: 'https://router.project-osrm.org/route/v1',
+                        profile: directionType === 'fastest' ? 'driving' : 'cycling' // Select profile based on dropdown
+                    })
+                }).addTo(map);
+
+                // Calculate fare
+                const distance = calculateDistance(pickupLatLng, dropoffLatLng);
+                const fare = calculateFare(distance, directionType);
+                
+                // Update live location information
+                document.querySelector('.update').innerHTML = `Update: Your ride is arriving in __ minutes. Estimated cost: for bike Rs.${fare}.`;
+            });
+        });
+    });
+
+    // Function to geocode location names
+    function geocodeLocation(locationName, callback) {
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}&format=json&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const { lat, lon } = data[0];
+                    callback([parseFloat(lat), parseFloat(lon)]);
+                } else {
+                    alert('Location not found.');
+                }
+            })
+            .catch(error => {
+                alert('Error fetching location data.');
+                console.error('Error:', error);
+            });
+    }
+
+    // Function to calculate distance between two points
+    function calculateDistance([lat1, lon1], [lat2, lon2]) {
+        const R = 6371; // Radius of the Earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in km
+    }
+
+    // Function to calculate fare based on distance and route type
+    function calculateFare(distance, routeType) {
+        const baseFare = 50; // Base fare in Rs.
+        const farePerKmShortest = 8; // Rate per km for shortest route in Rs.
+        const farePerKmFastest = 12; // Rate per km for fastest route in Rs.
+        const perKmRate = routeType === 'fastest' ? farePerKmFastest : farePerKmShortest;
+        const totalFare = baseFare + (perKmRate * distance);
+        return totalFare.toFixed(2); // Round to 2 decimal places
+    }
+
+    // Set current location as pickup
+    document.getElementById('set-current-location').addEventListener('click', function() {
+        if (currentLocation) {
+            document.getElementById('pickup').value = `${currentLocation[0]}, ${currentLocation[1]}`;
+        } else {
+            alert('Current location is not available.');
+        }
+    });
+
+    // Initialize map on page load
+    window.onload = initMap;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Location</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        #log {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="log"><h2>Location Log</h2><ul id="log-list"></ul></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const map = L.map('map').setView([17.3850, 78.4867], 13); // Starting at Hyderabad
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+    }).addTo(map);
+
+    const userIcon = L.icon({
+        iconUrl: 'https://img.icons8.com/ios-filled/50/000000/user-location.png',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+    });
+
+    let userMarker;
+
+    function updateUserLocation(lat, lon) {
+        if (userMarker) {
+            userMarker.setLatLng([lat, lon]);
+        } else {
+            userMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map);
+        }
+        map.panTo([lat, lon]);
+        logUserPosition(lat, lon);
+    }
+
+    function logUserPosition(lat, lon) {
+        const logList = document.getElementById('log-list');
+        const listItem = document.createElement('li');
+        listItem.textContent = `User location: latitude ${lat}, longitude ${lon}`;
+        logList.appendChild(listItem);
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            const { latitude, longitude } = position.coords;
+            updateUserLocation(latitude, longitude);
+            map.setView([latitude, longitude], 13);
+        }, error => {
+            console.error('Error getting user location:', error);
+        });
+    } else {
+        alert('Geolocation is not supported by this browser.');
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoNav</title>
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="/main (2).css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+
+<header>
+    <h1>AutoNav</h1>
+    <p>Real-Time Traffic Integration and Sustainable Mobility Hub</p>
+</header>
+
+<nav>
+    <a href="#interactive-map">Interactive Map</a>
+    <a href="#hub-locator">Hub Locator</a>
+    <a href="#ride-booking">Ride Booking</a>
+    <a href="#corridor-map">Corridor Map</a>
+</nav>
+
+<section id="interactive-map">
+    <h2>Interactive Map</h2>
+    <p>Explore the city’s public transportation network with our AI-powered interactive map. View real-time traffic updates, on-demand transportation routes, and more.</p>
+    <div id="map" style="height: 450px; width: 100%;"></div>
+</section>
+
+<section id="hub-locator">
+    <h2>Hub Locator</h2>
+    <p>Find the nearest sustainable mobility hub near you. Our AI system integrates real-time data to show you the best options for your journey.</p>
+    <form id="hub-form">
+        <label for="location">Enter Location (Address or Place):</label>
+        <input type="text" id="location" name="location" required>
+        <input type="submit" value="Find Nearest Hub">
+        <button type="button" id="use-my-location">Use My Location</button>
+    </form>
+    <div id="nearest-hub-info"></div>
+</section>
+
+<section id="ride-booking">
+    <h2>Ride Booking</h2>
+    <p>Book a ride with our AI-driven system. Choose your starting point and destination, and get the fastest route with real-time traffic updates.</p>
+    <p>You can also avail an eco-friendly ride to save trees and travel green!</p>
+    <a href="/index.html" class="btn">Book a Ride Now</a>
+</section>
+
+<section id="corridor-map">
+    <h2>Corridor Map</h2>
+    <p>View the designated corridors for AI-driven public transport. Ensure that your travel is both efficient and eco-friendly by sticking to these routes.</p>
+    <iframe src="map.html" width="640" height="480"></iframe>
+</section>
+
+<footer>
+    <p>&copy; 2024 AutoNav. All rights reserved.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    let map;
+    let userLocation = null;
+    const hubs = [
+        { name: 'Hub 1', lat: 17.385044, lon: 78.385230, address: '123 Main St, Hyderabad', services: 'Bike Rentals, Charging Stations', hours: '8 AM - 8 PM' },
+        { name: 'Hub 2', lat: 17.400000, lon: 78.400000, address: '456 Elm St, Hyderabad', services: 'Car Rentals, Eco-Friendly Vehicles', hours: '7 AM - 9 PM' },
+        { name: 'Hub 3', lat: 17.420000, lon: 78.420000, address: '789 Pine St, Hyderabad', services: 'Public Transport, Bike Sharing', hours: '6 AM - 10 PM' }
+    ];
+
+    function initMap() {
+        map = L.map('map').setView([17.385044, 78.385230], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(onLocationFound, onLocationError);
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    }
+
+    function onLocationFound(e) {
+        const { latitude, longitude } = e.coords;
+        userLocation = [latitude, longitude];
+
+        L.marker([latitude, longitude], {
+            icon: L.divIcon({ className: 'marker-icon pickup-icon' })
+        }).addTo(map)
+            .bindPopup('You are here.')
+            .openPopup();
+
+        map.setView([latitude, longitude], 13);
+    }
+
+    function onLocationError(e) {
+        alert(e.message);
+    }
+
+    function findNearestHub(location) {
+        let nearestHubs = hubs.map(hub => {
+            const distance = map.distance(location, [hub.lat, hub.lon]);
+            return { ...hub, distance };
+        }).sort((a, b) => a.distance - b.distance).slice(0, 3);
+
+        displayNearestHubs(nearestHubs);
+    }
+
+    function displayNearestHubs(hubs) {
+        const hubInfoDiv = document.getElementById('nearest-hub-info');
+        hubInfoDiv.innerHTML = '<h3>Nearest Hubs:</h3><ul>' +
+            hubs.map(hub => `
+                <li>
+                    <strong>${hub.name}</strong><br>
+                    Address: ${hub.address}<br>
+                    Services: ${hub.services}<br>
+                    Operating Hours: ${hub.hours}<br>
+                    Distance: ${(hub.distance / 1000).toFixed(2)} km
+                </li>
+            `).join('') +
+            '</ul>';
+    }
+
+    document.getElementById('hub-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const location = document.getElementById('location').value;
+
+        if (userLocation) {
+            geocodeLocation(location, function(latLng) {
+                if (latLng) {
+                    findNearestHub(latLng);
+                }
+            });
+        } else {
+            geocodeLocation(location, function(latLng) {
+                if (latLng) {
+                    findNearestHub(latLng);
+                }
+            });
+        }
+    });
+
+    document.getElementById('use-my-location').addEventListener('click', function() {
+        if (userLocation) {
+            findNearestHub(userLocation);
+        } else {
+            alert('Your location is not available. Please allow location access or enter an address.');
+        }
+    });
+
+    function geocodeLocation(locationName, callback) {
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}&format=json&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const { lat, lon } = data[0];
+                    callback([parseFloat(lat), parseFloat(lon)]);
+                } else {
+                    alert('Location not found.');
+                }
+            })
+            .catch(error => {
+                alert('Error fetching location data.');
+                console.error('Error:', error);
+            });
+    }
+
+    window.onload = initMap;
+</script>
+
+</body>
+</html>
