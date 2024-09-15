@@ -1,76 +1,89 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #F0FFF0;
+    background-color: #F4F9F4; /* Softer background for a more modern look */
 }
 
 header {
-    background-color: #008080;
+    background-color: #006666; /* Darker teal for better contrast */
     color: white;
-    padding: 10px 0;
+    padding: 20px 0; /* Increased padding for better spacing */
     text-align: center;
+    font-size: 1.8em; /* Larger text for the header */
 }
 
 nav {
     display: flex;
     justify-content: center;
-    background-color: #444;
+    background-color: #3A3A3A; /* Darker background for navigation */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
 }
 
 nav a {
-    padding: 14px 20px;
+    padding: 14px 25px;
     display: block;
-    color: #50C878;
+    color: #50C878; /* Keep the green link color */
     text-decoration: none;
     text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
 }
 
 nav a:hover {
     background-color: #555;
+    color: #F0FFF0; /* White hover text for better contrast */
 }
 
 section {
-    padding: 20px;
-    margin: 20px;
-    background-color: #9dc6bf;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    margin: 30px auto;
+    max-width: 1200px; /* Limit the section width for better readability */
+    background-color: #B4D3CC; /* Slightly softer teal for sections */
+    border-radius: 12px; /* Rounded corners */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Larger shadow for depth */
 }
 
 h2 {
-    color: #333;
+    color: #003333; /* Darker teal for headings */
+    font-size: 1.6em;
+    margin-bottom: 15px;
 }
 
 iframe {
     width: 100%;
-    height: 400px;
+    height: 450px; /* Increased height for iframe */
     border: none;
     border-radius: 8px;
-    margin-top: 10px;
+    margin-top: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Shadow for the iframe */
 }
 
 .btn {
     display: inline-block;
-    padding: 10px 20px;
+    padding: 12px 25px; /* Increased padding for a better button size */
     background-color: #333;
     color: white;
     text-align: center;
     text-decoration: none;
     border-radius: 5px;
-    margin-top: 10px;
+    margin-top: 20px;
+    transition: background-color 0.3s ease; /* Smooth transition on hover */
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2); /* Button shadow */
 }
 
 .btn:hover {
     background-color: #555;
+    color: #F0FFF0;
 }
 
 footer {
     text-align: center;
-    padding: 2px;
-    background-color: #008080;
+    padding: 10px 0; /* Increased padding for better spacing */
+    background-color: #006666;
     color: white;
-    position: relative ;
+    position: relative;
     width: 100%;
     bottom: 0;
+    font-size: 1em;
 }

@@ -3,12 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoNav</title>
+    <title>AutoNav - Nearest Bus Stations</title>
     <link rel="icon" href="favicon.png" type="image/x-icon">
-    <link rel="stylesheet" href="/main (2).css">
+    <link rel="stylesheet" href="/public/main.css">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 450px;
+            width: 100%;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        nav a {
+            margin-right: 10px;
+        }
+        header, section {
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        #nearest-hub-info {
+            margin-top: 20px;
+        }
+        #bus-schedule-container {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 
@@ -27,12 +50,12 @@
 <section id="interactive-map">
     <h2>Interactive Map</h2>
     <p>Explore the city’s public transportation network with our AI-powered interactive map. View real-time traffic updates, on-demand transportation routes, and more.</p>
-    <div id="map" style="height: 450px; width: 100%;"></div>
+    <div id="map"></div>
 </section>
 
 <section id="hub-locator">
     <h2>Hub Locator</h2>
-    <p>Find the nearest sustainable mobility hub near you. Our AI system integrates real-time data to show you the best options for your journey.</p>
+    <p>Find the nearest bus stations (hubs) near you. Our system integrates real-time data to show you the best options for your journey.</p>
     <form id="hub-form">
         <label for="location">Enter Location (Address or Place):</label>
         <input type="text" id="location" name="location" required>
@@ -40,12 +63,16 @@
         <button type="button" id="use-my-location">Use My Location</button>
     </form>
     <div id="nearest-hub-info"></div>
+
+    <!-- Link to view bus schedule -->
+    <div id="bus-schedule-container">
+        <a href="sch.html">View Schedule of Buses</a>
+    </div>
 </section>
 
 <section id="ride-booking">
     <h2>Ride Booking</h2>
     <p>Book a ride with our AI-driven system. Choose your starting point and destination, and get the fastest route with real-time traffic updates.</p>
-    <p>You can also avail an eco-friendly ride to save trees and travel green!</p>
     <a href="/index.html" class="btn">Book a Ride Now</a>
 </section>
 
@@ -59,15 +86,18 @@
     <p>&copy; 2024 AutoNav. All rights reserved.</p>
 </footer>
 
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
     let map;
     let userLocation = null;
+
+    // Hubs array (bus stations)
     const hubs = [
-        { name: 'Hub 1', lat: 17.385044, lon: 78.385230, address: '123 Main St, Hyderabad', services: 'Bike Rentals, Charging Stations', hours: '8 AM - 8 PM' },
-        { name: 'Hub 2', lat: 17.400000, lon: 78.400000, address: '456 Elm St, Hyderabad', services: 'Car Rentals, Eco-Friendly Vehicles', hours: '7 AM - 9 PM' },
-        { name: 'Hub 3', lat: 17.420000, lon: 78.420000, address: '789 Pine St, Hyderabad', services: 'Public Transport, Bike Sharing', hours: '6 AM - 10 PM' }
+        { name: 'Station 1', lat: 17.385044, lon: 78.385230, address: '123 Main St, Hyderabad', services: 'Bus Stop', hours: '5 AM - 11 PM' },
+        { name: 'Station 2', lat: 17.400000, lon: 78.400000, address: '456 Elm St, Hyderabad', services: 'Bus Stop', hours: '5 AM - 11 PM' },
+        { name: 'Station 3', lat: 17.420000, lon: 78.420000, address: '789 Pine St, Hyderabad', services: 'Bus Stop', hours: '5 AM - 11 PM' }
     ];
 
     function initMap() {
@@ -77,6 +107,17 @@
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+
+        // Display hubs on the map
+        hubs.forEach(hub => {
+            L.marker([hub.lat, hub.lon]).addTo(map)
+                .bindPopup(`
+                    <strong>${hub.name}</strong><br>
+                    Address: ${hub.address}<br>
+                    Services: ${hub.services}<br>
+                    Operating Hours: ${hub.hours}
+                `);
+        });
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(onLocationFound, onLocationError);
@@ -103,27 +144,38 @@
     }
 
     function findNearestHub(location) {
-        let nearestHubs = hubs.map(hub => {
-            const distance = map.distance(location, [hub.lat, hub.lon]);
-            return { ...hub, distance };
-        }).sort((a, b) => a.distance - b.distance).slice(0, 3);
+        const radius = 10000; // 10 km in meters
 
-        displayNearestHubs(nearestHubs);
+        // Filter hubs within 10 km
+        let nearestHubs = hubs.filter(hub => {
+            const distance = map.distance(location, [hub.lat, hub.lon]);
+            return distance <= radius;
+        });
+
+        if (nearestHubs.length > 0) {
+            displayNearestHubs(nearestHubs);
+        } else {
+            displayNearestHubs([]); // Show message if no hubs found
+        }
     }
 
     function displayNearestHubs(hubs) {
         const hubInfoDiv = document.getElementById('nearest-hub-info');
-        hubInfoDiv.innerHTML = '<h3>Nearest Hubs:</h3><ul>' +
-            hubs.map(hub => `
-                <li>
-                    <strong>${hub.name}</strong><br>
-                    Address: ${hub.address}<br>
-                    Services: ${hub.services}<br>
-                    Operating Hours: ${hub.hours}<br>
-                    Distance: ${(hub.distance / 1000).toFixed(2)} km
-                </li>
-            `).join('') +
-            '</ul>';
+        if (hubs.length === 0) {
+            hubInfoDiv.innerHTML = '<h3>No bus stations found within 10 km radius.</h3>';
+        } else {
+            hubInfoDiv.innerHTML = '<h3>Nearest Bus Stations (within 10 km):</h3><ul>' +
+                hubs.map(hub => `
+                    <li>
+                        <strong>${hub.name}</strong><br>
+                        Address: ${hub.address}<br>
+                        Services: ${hub.services}<br>
+                        Operating Hours: ${hub.hours}<br>
+                        Distance: ${(map.distance(userLocation, [hub.lat, hub.lon]) / 1000).toFixed(2)} km
+                    </li>
+                `).join('') +
+                '</ul>';
+        }
     }
 
     document.getElementById('hub-form').addEventListener('submit', function(event) {

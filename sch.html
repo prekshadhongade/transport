@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Bus Schedule for Public Transport</h1>
+
+<!-- Input form to search bus stop -->
+<form id="search-form">
+    <label for="stop-id">Enter Stop ID:</label>
+    <input type="text" id="stop-id" placeholder="Enter stop ID">
+    <button type="submit">Get Schedule</button>
+</form>
+
+<!-- Display bus schedule -->
+<h2>Bus Schedule</h2>
+<table id="bus-schedule">
+    <thead>
+        <tr>
+            <th>Route</th>
+            <th>Direction</th>
+            <th>Vehicle Number</th>
+            <th>Bus Type</th>
+            <th>ETA</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Bus schedule will be appended here -->
+    </tbody>
+</table>
+
+<!-- Script to fetch and display data from CSV JSON -->
+<script>
+    document.getElementById('search-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const stopId = document.getElementById('stop-id').value;
+        fetch('csvjson.json') // Assuming csvjson.json is in the same directory
+            .then(response => response.json())
+            .then(data => {
+                // Filter data based on the entered stop ID
+                const filteredData = data.filter(record => record.stop_id == stopId);
+
+                // Display the filtered data in the table
+                const tableBody = document.getElementById('bus-schedule').querySelector('tbody');
+                tableBody.innerHTML = ''; // Clear the previous results
+
+                if (filteredData.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6">No records found for Stop ID ' + stopId + '</td></tr>';
+                } else {
+                    filteredData.forEach(bus => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${bus.route}</td>
+                            <td>${bus.direction}</td>
+                            <td>${bus.vehicle_num}</td>
+                            <td>${bus.bus_type}</td>
+                            <td>${bus.eta}</td>
+                            <td>${bus.timestamp}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading the JSON data:', error);
+            });
+    });
+</script>
+
+</body>
+</html>
